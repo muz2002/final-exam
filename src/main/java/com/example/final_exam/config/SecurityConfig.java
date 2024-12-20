@@ -28,8 +28,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "https://final-exam-hiwi.onrender.com/api/auth/**").permitAll()
                         .requestMatchers("/api/posts/popular", "https://final-exam-hiwi.onrender.com/api/posts/popular").permitAll()
-                        .requestMatchers("/api/posts/**", "/api/categories/**", "https://final-exam-hiwi.onrender.com/api/posts/**").hasAnyRole("ADMIN","AUTHOR")
-                        .requestMatchers("/api/comments/**", "/api/likes/**").authenticated()
+                        .requestMatchers("/api/posts/**", "/api/categories/**", "https://final-exam-hiwi.onrender.com/api/posts/**","https://final-exam-hiwi.onrender.com/api/categories/**").hasAnyRole("ADMIN","AUTHOR")
+                        .requestMatchers("/api/comments/**","https://final-exam-hiwi.onrender.com/api/comments/**", "https://final-exam-hiwi.onrender.com/api/likes/**","/api/likes/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .authenticationProvider(authProvider())  // <--- add this line
