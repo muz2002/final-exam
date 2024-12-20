@@ -7,8 +7,8 @@ FROM gradle:8.2.1-jdk17 AS build
 WORKDIR /app
 
 # Copy Gradle build files and wrapper scripts first
-COPY ../build.gradle settings.gradle gradlew ./
-COPY ../gradle ./gradle
+COPY build.gradle settings.gradle gradlew ./
+COPY gradle ./gradle
 
 # Make Gradle Wrapper executable (if using wrapper)
 RUN chmod +x gradlew
