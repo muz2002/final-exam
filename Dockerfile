@@ -2,31 +2,32 @@
 FROM openjdk:19-jdk AS build
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first for dependency resolution
-COPY pom.xml .
-COPY mvnw .
-COPY .mvn .mvn
+# Copy Gradle wrapper and build files first for dependency caching
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
 
-# Ensure the Maven wrapper is executable
-RUN chmod +x ./mvnw
+# Make the Gradle wrapper executable
+RUN chmod +x ./gradlew
 
-# Download dependencies to leverage caching
-RUN ./mvnw dependency:go-offline -B
+# Download dependencies (caches them for subsequent builds)
+RUN ./gradlew --no-daemon build -x test || return 0
 
 # Now copy the source code
 COPY src src
 
-# Build the application, skip tests for faster build
-RUN ./mvnw clean package -DskipTests
+# Build the application (skip tests for faster build if desired)
+RUN ./gradlew --no-daemon clean build -x test
 
 # Stage 2: Runtime Image
 FROM openjdk:19-jdk
 WORKDIR /app
 
-# Copy the final jar from the build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy the JAR from the build stage
+COPY --from=build /app/build/libs/*.jar app.jar
 
-# Expose the default Spring Boot port
+# Expose the default port
 EXPOSE 8080
 
 # Run the application
