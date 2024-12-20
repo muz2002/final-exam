@@ -26,9 +26,9 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/posts/popular").permitAll()
-                        .requestMatchers("/api/posts/**", "/api/categories/**").hasAnyRole("ADMIN","AUTHOR")
+                        .requestMatchers("/api/auth/**", "https://final-exam-hiwi.onrender.com/api/auth/**").permitAll()
+                        .requestMatchers("/api/posts/popular", "https://final-exam-hiwi.onrender.com/api/posts/popular").permitAll()
+                        .requestMatchers("/api/posts/**", "/api/categories/**", "https://final-exam-hiwi.onrender.com/api/posts/**").hasAnyRole("ADMIN","AUTHOR")
                         .requestMatchers("/api/comments/**", "/api/likes/**").authenticated()
                         .anyRequest().permitAll()
                 )
