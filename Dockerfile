@@ -1,23 +1,39 @@
-# Stage 1: Build Image
-FROM openjdk:19-jdk AS build
-WORKDIR /app
+# ---- Build Stage ----
+FROM gradle:7.6.2-jdk17-alpine AS builder
 
-# Install necessary packages
-RUN apt-get update && apt-get install -y findutils && rm -rf /var/lib/apt/lists/*
+# Set the working directory inside the container
+WORKDIR /home/gradle/fina-exam
 
-COPY gradlew .
+# Copy Gradle wrapper and settings first to leverage caching
+COPY gradlew gradlew.bat settings.gradle build.gradle ./
 COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
-RUN chmod +x ./gradlew
-RUN ./gradlew --no-daemon clean build -x test
 
+# Ensure gradlew is executable
+RUN chmod +x gradlew
+
+# Copy the rest of the application source code
 COPY src src
-RUN ./gradlew --no-daemon clean build -x test
 
-# Stage 2: Runtime Image
-FROM openjdk:19-jdk
+# Build the application (this will create the JAR in build/libs/)
+RUN ./gradlew bootJar --no-daemon
+
+# ---- Runtime Stage ----
+FROM eclipse-temurin:17-jdk-alpine
+
+# Create a non-root user for security (optional but recommended)
+RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
+
+# Set the working directory for the runtime image
 WORKDIR /app
-COPY --from=build /app/build/libs/*.jar app.jar
-EXPOSE 8000
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+
+# Copy the built JAR from the build stage
+COPY --from=builder /home/gradle/fina-exam/build/libs/*.jar app.jar
+
+# Expose the default Spring Boot port
+EXPOSE 8080
+
+# Switch to the non-root user
+USER appuser
+
+# Start the Spring Boot application
+ENTRYPOINT ["java", "-jar", "app.jar"]
