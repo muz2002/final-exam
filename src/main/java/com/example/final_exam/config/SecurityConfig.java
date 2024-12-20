@@ -32,6 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/comments/**", "/api/likes/**").authenticated()
                         .anyRequest().permitAll()
                 )
+                .authenticationProvider(authProvider())  // <--- add this line
                 .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
