@@ -6,32 +6,36 @@ FROM gradle:8.2.1-jdk17 AS build
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy Gradle build files first to leverage Docker layer caching
-COPY build.gradle settings.gradle ./
+# Copy Gradle build files and wrapper scripts first
+COPY build.gradle settings.gradle gradlew ./
 COPY gradle ./gradle
 
-# Download dependencies without building the project
-RUN gradle build --no-daemon -x test
+# Make Gradle Wrapper executable (if using wrapper)
+RUN chmod +x gradlew
 
-# Copy the rest of the application source code
+# Download dependencies without building the entire project to leverage Docker caching
+RUN ./gradlew build -x test --no-daemon || return 0
+
+# Now copy the source code
 COPY src ./src
 
-# Package the application into an executable JAR
-RUN gradle bootJar --no-daemon -x test
+# Build the application
+RUN ./gradlew bootJar -x test --no-daemon
 
 # ===========================
-# Stage 2: Run the Application
+# Stage 2: Create the Runtime Image
 # ===========================
 FROM openjdk:17.0.1-jdk-slim
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy the built JAR file from the build stage
+# Copy the Spring Boot JAR file from the build stage
 COPY --from=build /app/build/libs/*.jar demo.jar
 
-# Expose the application port as defined in your configuration
+# Expose the application port
+# Adjust if your application runs on a different port (e.g., if server.port=8000, then EXPOSE 8000)
 EXPOSE 8000
 
-# Define the entry point to run the JAR file
+# Set the entrypoint to run the JAR
 ENTRYPOINT ["java", "-jar", "demo.jar"]
