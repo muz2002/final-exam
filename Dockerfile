@@ -1,20 +1,18 @@
 FROM openjdk:19-jdk AS build
 WORKDIR /app
 
-# Copy build files and gradle wrapper
+# Install xargs (and potentially other needed tools)
+RUN apt-get update && apt-get install -y findutils && rm -rf /var/lib/apt/lists/*
+
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle .
 COPY settings.gradle .
+
 RUN chmod +x ./gradlew
-
-# Download dependencies if needed (optional)
-# RUN ./gradlew --no-daemon build -x test || true
-
-# Now copy source code
 COPY src src
 
-# Build the application
+# Run Gradle build
 RUN ./gradlew --no-daemon clean build -x test
 
 FROM openjdk:19-jdk
