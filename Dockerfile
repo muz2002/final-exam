@@ -1,39 +1,37 @@
-# ---- Build Stage ----
-FROM gradle:7.6.2-jdk17-alpine AS builder
+# ===========================
+# Stage 1: Build the Application
+# ===========================
+FROM gradle:8.2.1-jdk17 AS build
 
 # Set the working directory inside the container
-WORKDIR /home/gradle/fina-exam
-
-# Copy Gradle wrapper and settings first to leverage caching
-COPY gradlew gradlew.bat settings.gradle build.gradle ./
-COPY gradle gradle
-
-# Ensure gradlew is executable
-RUN chmod +x gradlew
-
-# Copy the rest of the application source code
-COPY src src
-
-# Build the application (this will create the JAR in build/libs/)
-RUN ./gradlew bootJar --no-daemon
-
-# ---- Runtime Stage ----
-FROM eclipse-temurin:17-jdk-alpine
-
-# Create a non-root user for security (optional but recommended)
-RUN addgroup --system appgroup && adduser --system appuser --ingroup appgroup
-
-# Set the working directory for the runtime image
 WORKDIR /app
 
-# Copy the built JAR from the build stage
-COPY --from=builder /home/gradle/fina-exam/build/libs/*.jar app.jar
+# Copy Gradle build files first to leverage Docker layer caching
+COPY build.gradle settings.gradle ./
+COPY gradle ./gradle
 
-# Expose the default Spring Boot port
-EXPOSE 8080
+# Download dependencies without building the project
+RUN gradle build --no-daemon -x test
 
-# Switch to the non-root user
-USER appuser
+# Copy the rest of the application source code
+COPY src ./src
 
-# Start the Spring Boot application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Package the application into an executable JAR
+RUN gradle bootJar --no-daemon -x test
+
+# ===========================
+# Stage 2: Run the Application
+# ===========================
+FROM openjdk:17.0.1-jdk-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the built JAR file from the build stage
+COPY --from=build /app/build/libs/*.jar demo.jar
+
+# Expose the application port as defined in your configuration
+EXPOSE 8000
+
+# Define the entry point to run the JAR file
+ENTRYPOINT ["java", "-jar", "demo.jar"]
