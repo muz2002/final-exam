@@ -1,15 +1,23 @@
-FROM ubuntu:latest AS build
+# Stage 1: Build Image
+FROM openjdk:19-jdk AS build
+WORKDIR /app
 
-RUN apt-get update
-RUN apt-get install openjdk-17-jdk -y
-COPY . .
+# Install necessary packages
+RUN apt-get update && apt-get install -y findutils && rm -rf /var/lib/apt/lists/*
 
-RUN ./gradlew bootJar --no-daemon
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle .
+COPY settings.gradle .
+RUN chmod +x ./gradlew
+RUN ./gradlew --no-daemon clean build -x test
 
-FROM openjdk:17-jdk-slim
+COPY src src
+RUN ./gradlew --no-daemon clean build -x test
 
-EXPOSE 8080
-
-COPY --from=build /build/libs/final-exam.jar app.jar
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Stage 2: Runtime Image
+FROM openjdk:19-jdk
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
+EXPOSE 8000
+ENTRYPOINT ["java","-jar","/app/app.jar"]
