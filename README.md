@@ -34,6 +34,13 @@
 4. **Run the application**
    ```bash
    ./gradlew bootRun
+**Once the application is running, it will be available on http://localhost:8000.**
+
+## API ENDPOINTS
+
+**Authentication**
+
+
 
 
 
